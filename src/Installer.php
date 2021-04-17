@@ -14,21 +14,21 @@ final class Installer implements PluginInterface, EventSubscriberInterface
 {
 
     /** @var Composer */
-    private Composer $composer;
+    private $composer;
 
     /** @var IOInterface */
-    private IOInterface $io;
+    private $io;
 
-    private array $projectTypes = [
+    private $projectTypes = [
         'sdopx-plugin' => ['sdopx/plugin'],
-        'beacon-widget' => ['beacon/widget'],
+        'beacon-widget' => ['beacon/widget', 'www', 'app/tool/widget'],
         'beacon-app' => ['app'],
     ];
 
     /**
      * @return array[]
      */
-    public static function getSubscribedEvents(): array
+    public static function getSubscribedEvents()
     {
         return [
             ScriptEvents::POST_INSTALL_CMD => ['install', 1],
@@ -52,55 +52,64 @@ final class Installer implements PluginInterface, EventSubscriberInterface
 
     }
 
-    public function install(): void
+    public function install()
     {
         $extra = $this->composer->getPackage()->getExtra();
-        $disable = $extra['installer-disable'] ?? false;
+        $disable = isset($extra['installer-disable']) ? $extra['installer-disable'] : false;
         if ($disable) {
             $this->io->write('<info>Beacon Installer was disabled</info>');
             return;
         }
-
-        foreach ($this->projectTypes as $projectType => $paths) {
-            if ($this->hasPath($paths)) {
-                $this->installProjectType($projectType);
-            }
-        }
-    }
-
-    private function hasPath(array $paths): bool
-    {
-        foreach ($paths as $path) {
-            $path = str_replace(['/', '\\'], DIRECTORY_SEPARATOR, $path);
-            if (!file_exists(getcwd() . DIRECTORY_SEPARATOR . $path)) {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    private function installProjectType(string $projectType): void
-    {
         $processedPackages = [];
         $packages = $this->composer->getRepositoryManager()->getLocalRepository()->getPackages();
         foreach ($packages as $package) {
             $name = $package->getName();
+            $type = $package->getType();
+            if (!isset($this->projectTypes[$type])) {
+                continue;
+            }
+            $paths = $this->projectTypes[$type];
             if (in_array($name, $processedPackages)) {
                 continue;
             }
             $processedPackages[] = $name;
             $packagePath = $this->composer->getInstallationManager()->getInstallPath($package);
-            $sourcePath = $packagePath . DIRECTORY_SEPARATOR . '.install' . DIRECTORY_SEPARATOR . $projectType;
-            if (file_exists($sourcePath)) {
-                $changed = $this->copy($sourcePath, (string)getcwd());
-                if ($changed) {
-                    $this->io->write('- Configured <info>' . $name . '</info>');
+            foreach ($paths as $path) {
+                $sourcePath = $packagePath . DIRECTORY_SEPARATOR . $path;
+                $targetPath = getcwd() . DIRECTORY_SEPARATOR . $path;
+                if (file_exists($sourcePath)) {
+                    $changed = $this->copy($sourcePath, $targetPath);
+                    if ($changed) {
+                        $this->io->write('- Installing <info>' . $name . '</info>');
+                    }
+                    $this->deldir($sourcePath);
                 }
             }
         }
     }
 
-    private function copy(string $sourcePath, string $targetPath): bool
+    private function deldir($path)
+    {
+
+        if (is_dir($path)) {
+            $p = scandir($path);
+            if (count($p) > 2) {
+                foreach ($p as $val) {
+                    if ($val != "." && $val != "..") {
+                        if (is_dir($path . DIRECTORY_SEPARATOR . $val)) {
+                            $this->deldir($path . DIRECTORY_SEPARATOR . $val);
+                        } else {
+                            unlink($path . DIRECTORY_SEPARATOR . $val);
+                        }
+                    }
+                }
+            }
+        }
+        return rmdir($path);
+
+    }
+
+    private function copy(string $sourcePath, string $targetPath)
     {
         $changed = false;
         /** @var \RecursiveDirectoryIterator $iterator */
@@ -120,14 +129,14 @@ final class Installer implements PluginInterface, EventSubscriberInterface
         return $changed;
     }
 
-    public function copyFile(string $source, string $target): void
+    public function copyFile(string $source, string $target)
     {
+        $this->io->write('- Move File <info>' . $source . ' --> ' . $target . '</info>');
         if (file_exists($target)) {
             return;
         }
         copy($source, $target);
         @chmod($target, fileperms($target) | (fileperms($source) & 0111));
     }
-
 
 }
