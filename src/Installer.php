@@ -82,22 +82,22 @@ final class Installer implements PluginInterface, EventSubscriberInterface
                     if ($changed) {
                         $this->io->write('- Installing <info>' . $name . '</info>');
                     }
-                    $this->deldir($sourcePath);
+
                 }
             }
+            $this->deldir($packagePath);
         }
     }
 
-    private function deldir($path)
+    private function delDir($path)
     {
-
         if (is_dir($path)) {
             $p = scandir($path);
             if (count($p) > 2) {
                 foreach ($p as $val) {
                     if ($val != "." && $val != "..") {
                         if (is_dir($path . DIRECTORY_SEPARATOR . $val)) {
-                            $this->deldir($path . DIRECTORY_SEPARATOR . $val);
+                            $this->delDir($path . DIRECTORY_SEPARATOR . $val);
                         } else {
                             unlink($path . DIRECTORY_SEPARATOR . $val);
                         }
@@ -112,9 +112,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
     private function copy(string $sourcePath, string $targetPath)
     {
         $changed = false;
-        /** @var \RecursiveDirectoryIterator $iterator */
         $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($sourcePath, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
-        /** @var \SplFileInfo $fileInfo */
         foreach ($iterator as $fileInfo) {
             $target = $targetPath . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
             if ($fileInfo->isDir()) {
