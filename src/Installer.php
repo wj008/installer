@@ -19,7 +19,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
     /** @var IOInterface */
     private IOInterface $io;
 
-    private array $supportedTypes = [
+    private array $projectTypes = [
         'sdopx-plugin' => ['sdopx/plugin'],
         'beacon-widget' => ['beacon/widget'],
         'app' => ['app'],
