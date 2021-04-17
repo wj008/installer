@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace beacon\installer;
+namespace beacon\install;
 
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
