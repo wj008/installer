@@ -85,7 +85,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
 
                 }
             }
-            $this->deldir($packagePath);
+            $this->delDir($packagePath);
         }
     }
 
@@ -129,7 +129,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
 
     public function copyFile(string $source, string $target)
     {
-        $this->io->write('- Move File <info>' . $source . ' --> ' . $target . '</info>');
+        $this->io->write('- Add File <info>' . $target . '</info>');
         if (file_exists($target)) {
             return;
         }
