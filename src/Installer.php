@@ -22,7 +22,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
     private $projectTypes = [
         'sdopx-plugin' => ['sdopx/plugin'],
         'beacon-widget' => ['beacon/widget', 'www', 'app/tool/widget'],
-        'beacon-app' => ['app'],
+        'beacon-app' => ['app', 'www'],
     ];
 
     /**
