@@ -117,9 +117,11 @@ final class Installer implements PluginInterface, EventSubscriberInterface
             $target = $targetPath . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
             if ($fileInfo->isDir()) {
                 if (!is_dir($target)) {
+                    $this->io->write('- Add Dir <info>' . $target . '</info>');
                     mkdir($target);
                 }
             } elseif (!file_exists($target)) {
+                $this->io->write('- Add File <info>' . $target . '</info>');
                 $this->copyFile($fileInfo->getPathname(), $target);
                 $changed = true;
             }
@@ -129,7 +131,6 @@ final class Installer implements PluginInterface, EventSubscriberInterface
 
     public function copyFile(string $source, string $target)
     {
-        $this->io->write('- Add File <info>' . $target . '</info>');
         if (file_exists($target)) {
             return;
         }
