@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace beacon\install;
 
+use beacon\core\Util;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
@@ -20,9 +21,9 @@ final class Installer implements PluginInterface, EventSubscriberInterface
     private $io;
 
     private $projectTypes = [
-        'sdopx-plugin' => ['sdopx/plugin'],
-        'beacon-widget' => ['beacon/widget', 'www', 'app/tool/widget'],
-        'beacon-app' => ['app', 'www'],
+        'sdopx-plugin' => true,
+        'beacon-widget' => true,
+        'beacon-app' => true,
     ];
 
     /**
@@ -68,28 +69,30 @@ final class Installer implements PluginInterface, EventSubscriberInterface
             if (!isset($this->projectTypes[$type])) {
                 continue;
             }
-            $paths = $this->projectTypes[$type];
             if (in_array($name, $processedPackages)) {
                 continue;
             }
             $processedPackages[] = $name;
             $packagePath = $this->composer->getInstallationManager()->getInstallPath($package);
-            foreach ($paths as $path) {
-                $sourcePath = $packagePath . DIRECTORY_SEPARATOR . $path;
-                $targetPath = getcwd() . DIRECTORY_SEPARATOR . $path;
-                if (file_exists($sourcePath)) {
-                    $changed = $this->copy($sourcePath, $targetPath);
-                    if ($changed) {
-                        $this->io->write('- Installing <info>' . $name . '</info>');
+            $packagePath = $packagePath . DIRECTORY_SEPARATOR . '.install';
+            if (is_dir($packagePath)) {
+                $directory = new \RecursiveDirectoryIterator($packagePath, \RecursiveDirectoryIterator::SKIP_DOTS);
+                foreach ($directory as $dir) {
+                    if ($dir->isDir()) {
+                        $sourcePath = $dir->getPathname();
+                        $targetPath = getcwd() . DIRECTORY_SEPARATOR . $dir->getBasename();
+                        $changed = $this->copy($sourcePath, $targetPath);
+                        if ($changed) {
+                            $this->io->write('- Installing <info>' . $name . '</info>');
+                        }
                     }
-
                 }
             }
-            $this->delDir($packagePath);
+            $this->removeDir($packagePath);
         }
     }
 
-    private function delDir($path)
+    private function removeDir($path)
     {
         if (is_dir($path)) {
             $p = scandir($path);
@@ -97,7 +100,7 @@ final class Installer implements PluginInterface, EventSubscriberInterface
                 foreach ($p as $val) {
                     if ($val != "." && $val != "..") {
                         if (is_dir($path . DIRECTORY_SEPARATOR . $val)) {
-                            $this->delDir($path . DIRECTORY_SEPARATOR . $val);
+                            $this->removeDir($path . DIRECTORY_SEPARATOR . $val);
                         } else {
                             unlink($path . DIRECTORY_SEPARATOR . $val);
                         }
@@ -105,14 +108,15 @@ final class Installer implements PluginInterface, EventSubscriberInterface
                 }
             }
         }
-        return rmdir($path);
+        rmdir($path);
 
     }
 
     private function copy(string $sourcePath, string $targetPath)
     {
         $changed = false;
-        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($sourcePath, \RecursiveDirectoryIterator::SKIP_DOTS), \RecursiveIteratorIterator::SELF_FIRST);
+        $directory = new \RecursiveDirectoryIterator($sourcePath, \RecursiveDirectoryIterator::SKIP_DOTS);
+        $iterator = new \RecursiveIteratorIterator($directory, \RecursiveIteratorIterator::SELF_FIRST);
         foreach ($iterator as $fileInfo) {
             $target = $targetPath . DIRECTORY_SEPARATOR . $iterator->getSubPathName();
             if ($fileInfo->isDir()) {
