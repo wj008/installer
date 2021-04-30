@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace beacon\install;
 
-use beacon\core\Util;
 use Composer\Composer;
 use Composer\EventDispatcher\EventSubscriberInterface;
 use Composer\IO\IOInterface;
