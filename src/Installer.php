@@ -86,8 +86,8 @@ final class Installer implements PluginInterface, EventSubscriberInterface
                         }
                     }
                 }
+                $this->removeDir($packagePath);
             }
-            $this->removeDir($packagePath);
         }
     }
 
